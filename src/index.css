@@ -1,0 +1,300 @@
+@import "tailwindcss";
+
+/*
+ * Dark mode is a class the interface puts on <html>, not a preference the
+ * stylesheet guesses at.
+ *
+ * `prefers-color-scheme` alone would mean a person browsing at work on a bright
+ * screen and at home on a dark one gets whatever their operating system says,
+ * with no way to choose. HASSAL asks instead, remembers the answer under
+ * `hassal_theme`, and only falls back to the system when nothing was ever
+ * chosen — see `src/lib/theme.ts`. This variant definition is what makes the
+ * `dark:` utilities in the components respond to that class.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * «النخيل» — the HASSAL design system, as CSS custom properties.
+ *
+ * This block is the single place where the identity is decided; it mirrors
+ * `lib/core/nakhel.dart` in the Flutter client value for value, so a price
+ * green and a badge gold mean the same thing in both rooms. Raw values only:
+ * relationships (what ink a surface gets, what survives night) are the job of
+ * the remap below and, from here on, of the shared primitives.
+ *
+ * The four rules the whole system obeys — see the Dart file for the long form:
+ * olive is what you press, gold is what you notice; nothing floats (depth is
+ * a hairline, not a shadow); headings carry weight and every comparable
+ * number carries tabular figures; motion is 120/180/260ms of explanation or
+ * none at all.
+ *
+ * The `hassal-night/surface/raised/line` names are kept because a dozen
+ * screens ask for them as utilities (`bg-hassal-surface`); their values are
+ * the night appearance of النخيل — near-black green, not blue-grey.
+ */
+@theme {
+  /* Brand: the date-palm body and its light. */
+  --color-palm: #1f3d2b;
+  --color-palm-deep: #152c1e;
+  --color-palm-night: #a9c6a4;
+  --color-gold: #c8973f;
+  --color-gold-deep: #8a651f;
+
+  /* Ground: warm ivory page, olive-black ink, and the card a step off it. */
+  --color-ivory: #f7f4ee;
+  --color-ivory-page: #efeadf;
+  --color-ink: #15201a;
+
+  /* Night surfaces, one step each: page, card, field, hairline. */
+  --color-hassal-night: #0e1410;
+  --color-hassal-surface: #171f19;
+  --color-hassal-raised: #1f2922;
+  --color-hassal-line: #2e3d31;
+  --color-hassal-text: #e4eae2;
+
+  /* Status, kept at a deliberate distance from the brand. */
+  --color-good: #2e7d5b;
+  --color-good-night: #7bc89b;
+  --color-warn: #b4571c;
+  --color-warn-night: #e0904f;
+  --color-bad: #a5382a;
+  --color-bad-night: #e58e80;
+
+  /* Muted inks and daylight hairlines, chosen against ivory. */
+  --color-mute: #5a6b5c;
+  --color-mute-night: #9db09f;
+  --color-hairline: #e0e2d8;
+
+  /* Three shapes, no more: the card is the signature. */
+  --radius-card: 12px;
+  --radius-control: 10px;
+
+  /* The Arabic-first stack, the same order the Flutter client falls back in. */
+  --font-sans: 'IBM Plex Sans Arabic', 'Tajawal', ui-sans-serif, system-ui, sans-serif;
+
+  /* Motion tokens: names the components will use instead of ad-hoc numbers. */
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 260ms;
+}
+
+/*
+ * The one typographic rule a stylesheet cannot enforce through class names:
+ * every number a person compares — a price, a quantity, a total — is set in
+ * tabular figures, so a column of riyals aligns vertically and a difference
+ * is visible at a glance. Components opt in with `tabular`; tables opt in at
+ * their cells below.
+ */
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+/*
+ * The body is styled here rather than only as a class on <body> in index.html,
+ * because the theme can change while the page is open and the transition should
+ * belong to the document, not to whichever component re-rendered last.
+ */
+body {
+  background-color: var(--color-ivory-page);
+  color: var(--color-ink);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+html.dark body {
+  background-color: var(--color-hassal-night);
+  color: var(--color-hassal-text);
+}
+
+/*
+ * Form controls keep the browser's own text colour unless a component says
+ * otherwise; in a dark document an unstyled `<select>` would render dark text on
+ * a dark option list. This sets the default once.
+ */
+html.dark select,
+html.dark textarea,
+html.dark input {
+  color-scheme: dark;
+}
+
+/*
+ * Tables compare numbers, so every cell gets tabular figures without asking:
+ * the rule a desk-bound reviewer relies on — differences visible straight
+ * down a column — is a property of what a table is, not of each screen that
+ * remembers to write it.
+ */
+td,
+th {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * App-wide dark remap for the light-only utilities.
+ *
+ * The shared primitives in `panel.tsx` and the header opt into `dark:` per class.
+ * The dozens of business screens predate that and hard-code light surfaces —
+ * `bg-white`, `text-slate-900`, `border-slate-200` — because when they were
+ * written there was no dark mode. Retyping every literal in every file is both
+ * large and fragile; a screen added next week would quietly ignore dark again.
+ *
+ * So the common utilities are remapped here once, under `.dark`, against the same
+ * tokens the primitives use. `html.dark .bg-white` out-specifies Tailwind's
+ * `.bg-white`, so the override lands without `!important` and without touching a
+ * single component. A component that already styles itself for dark with a
+ * `dark:` utility still wins on that element, because a more specific utility
+ * class overrides this generic remap for it.
+ *
+ * The accent colours are only nudged, never flattened: emerald/amber/rose still
+ * mean approved/waiting/refused in both themes, just lightened so they stay
+ * legible against `hassal-night`.
+ *
+ * Deliberately unlayered. Tailwind v4 sorts its cascade as theme → base →
+ * components → utilities, and a later layer beats an earlier one regardless of
+ * specificity. An `@layer base` rule here would lose to the `utilities`
+ * `.bg-white`. Unlayered author CSS outranks every `@layer`, so these remaps
+ * apply no matter how the component wrote the class.
+ */
+  html.dark .bg-white { background-color: var(--color-hassal-surface); }
+  html.dark .bg-slate-50 { background-color: var(--color-hassal-surface); }
+  html.dark .bg-slate-100 { background-color: var(--color-hassal-raised); }
+  html.dark .bg-slate-200 { background-color: var(--color-hassal-line); }
+
+  html.dark .text-slate-900 { color: var(--color-hassal-text); }
+  html.dark .text-slate-800 { color: color-mix(in oklab, var(--color-hassal-text) 80%, var(--color-mute-night)); }
+  html.dark .text-slate-700 { color: color-mix(in oklab, var(--color-hassal-text) 60%, var(--color-mute-night)); }
+  html.dark .text-slate-600 { color: var(--color-mute-night); }
+  html.dark .text-slate-500 { color: color-mix(in oklab, var(--color-mute-night) 80%, var(--color-hassal-surface)); }
+  html.dark .text-slate-400 { color: color-mix(in oklab, var(--color-mute-night) 70%, var(--color-hassal-surface)); }
+
+  html.dark .border-slate-100,
+  html.dark .border-slate-200,
+  html.dark .border-slate-300 { border-color: var(--color-hassal-line); }
+  html.dark .divide-slate-100 > :not(:last-child),
+  html.dark .divide-slate-200 > :not(:last-child) { border-color: var(--color-hassal-line); }
+  html.dark .ring-slate-200 { --tw-ring-color: var(--color-hassal-line); }
+
+  /* Hover states that assumed a white base. */
+  html.dark .hover\:bg-slate-50:hover { background-color: var(--color-hassal-raised); }
+  html.dark .hover\:bg-slate-100:hover { background-color: var(--color-hassal-line); }
+
+  /* Status accents — good/warn/bad from the token block, lightened so the
+     same three verbs (approved, waiting, refused) read the same at night. */
+  html.dark .text-emerald-700,
+  html.dark .text-emerald-800 { color: var(--color-good-night); }
+  html.dark .text-amber-700,
+  html.dark .text-amber-800 { color: var(--color-warn-night); }
+  html.dark .text-rose-700,
+  html.dark .text-rose-800 { color: var(--color-bad-night); }
+  html.dark .text-sky-700,
+  html.dark .text-sky-800 { color: var(--color-palm-night); }
+  html.dark .bg-emerald-50 { background-color: color-mix(in oklab, var(--color-good) 18%, transparent); }
+  html.dark .bg-amber-50 { background-color: color-mix(in oklab, var(--color-warn) 18%, transparent); }
+  html.dark .bg-rose-50 { background-color: color-mix(in oklab, var(--color-bad) 18%, transparent); }
+  html.dark .bg-sky-50 { background-color: color-mix(in oklab, var(--color-palm-night) 16%, transparent); }
+
+/*
+ * Hiding a scroller on a horizontally scrolling strip (the header's nav, filter
+ * rows). Tailwind has no such utility, and a strip that shows a scrollbar on a
+ * phone reads as a broken layout.
+ */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+/*
+ * Small screens, swept once.
+ *
+ * The business screens were written for a reviewer at a desk: dense filter bars,
+ * wide tables, `text-[11px]` everywhere. Editing seventeen thousand lines of
+ * components to make them behave on a phone is neither safe nor finished — the
+ * next screen written would forget it again. So the handful of things that
+ * actually break on a handset are corrected here, the same way the dark remap
+ * above corrects the colours.
+ *
+ * Each rule answers one observed failure:
+ *
+ *   1. iOS zooms the whole page when a focused input is smaller than 16px, and
+ *      the zoom persists after the keyboard closes — the page is then sideways
+ *      and the person has to find the page again. Every form field on this
+ *      platform is 11–13px. So on a phone, fields are 16px. Legibility was the
+ *      complaint behind the zoom anyway.
+ *   2. A table of deals has more columns than a 360px screen. `display:block`
+ *      with a scroll makes the *table* swipe instead of the page, which would
+ *      otherwise take the whole layout sideways.
+ *   3. Long unbroken values — a commercial registration number, an absolute
+ *      URL, a product name without spaces — push their container wider than the
+ *      viewport. `overflow-wrap` breaks them inside the box that holds them.
+ *   4. Controls sized for a mouse (`px-3 py-1`) are a guess on a touchscreen.
+ *      A minimum height gives a tap target a thumb can hit, and it changes no
+ *      layout above 768px, where the pointer is precise and the density was
+ *      deliberate.
+ *
+ * Deliberately unlayered, for the same reason as the dark remap: an author rule
+ * outside `@layer` outranks Tailwind's `utilities` layer, which is what lets
+ * these apply to a component that wrote `text-xs` or `py-1` itself. They are
+ * also gated behind a media query, so on a desktop — where a console's density
+ * is a feature, not a defect — nothing here applies at all.
+ */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  /* `select` keeps its own font in some engines; the fields above are the ones
+     a person types into, and a picker that jumps size mid-form is expected. */
+  button,
+  [role='button'] {
+    min-height: 40px;
+  }
+
+  td,
+  th,
+  p,
+  label,
+  span {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 639px) {
+  table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/*
+ * The mark, working.
+ *
+ * A spinner says "somebody is busy". The brand breathing says "this platform is
+ * doing the thing you asked" — which is the sentence a sign-in or a
+ * registration wants to say while the server decides.
+ */
+@keyframes hassal-brand-breathe {
+  0%, 100% { opacity: 0.45; transform: scale(0.92); }
+  50%      { opacity: 1;    transform: scale(1); }
+}
+
+.hassal-brand-breathe {
+  animation: hassal-brand-breathe 1.15s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hassal-brand-breathe {
+    animation: none;
+    opacity: 1;
+  }
+}

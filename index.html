@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>حصّال — HASSAL</title>
+    <meta name="description" content="B2B Marketplace للمواد الغذائية والفرص التجارية والمخزون، يربط المؤسسات والبائعين والمشترين في سوق تجاري منظم." />
+
+    <!--
+      The brand mark ships as PNG at its real pixel sizes (public/brand). The
+      declared `sizes` below are the actual dimensions of each file, not a hint
+      we hope a browser believes: a 48px file labelled 32x32 is how favicons end
+      up blurry on a scaled display.
+    -->
+    <link rel="icon" type="image/png" sizes="48x48" href="/brand/favicon-48.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/brand/icon-96.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/brand/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-title" content="حصّال" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <meta property="og:title" content="حصّال — HASSAL" />
+    <meta property="og:description" content="B2B Marketplace للمواد الغذائية والفرص التجارية والمخزون، يربط المؤسسات والبائعين والمشترين في سوق تجاري منظم." />
+    <meta property="og:type" content="website" />
+    <!-- Relative on purpose: this file does not know the host it will be
+         served from, and a hard-coded domain is a claim about a deployment.
+         Most crawlers resolve it; the strict ones (and Facebook) want an
+         absolute URL, so the operator sets it once per installation. -->
+    <meta property="og:image" content="/brand/icon-512.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- The opening paints itself from this one file, so it starts downloading
+         with the document instead of waiting for the stylesheet to be parsed.
+         512px is the smallest asset that stays crisp when the mark is shown at
+         ~150px on a doubled display. -->
+    <link rel="preload" as="image" href="/brand/icon-512.png" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'IBM Plex Sans Arabic', 'Tajawal', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+
+      /*
+        THE OPENING — pure CSS, no script.
+
+        It waits for nobody and it removes itself. It lives in the document, so
+        it animates while the bundle is still being fetched; it is a *sibling*
+        of #root, so React mounting cannot cut it short on a warm cache nor
+        stretch it on a cold one; and its last keyframe sets
+        `visibility: hidden`, so there is no leftover layer eating taps.
+
+        HOW THE MARK IS DRAWN. The artwork is a PNG, so there is no path to
+        trace. The single image is split into two masked layers:
+
+          - `.hassal-boot-strokes` — the mark with a circular hole punched
+            where the coin sits, laid bare by a conic sweep that travels all
+            the way around it, so every piece is drawn in turn from the centre
+            outwards rather than being wiped down one axis;
+          - `.hassal-boot-coin` — nothing but that disc, which then falls from
+            above, turns twice in the air and lands in the hole.
+
+        At rest the two masks sum to full opacity and tile back into the
+        original file exactly, so the opening ends on the real logo rather than
+        an approximation of it. Nothing of the brand is invented or redrawn.
+
+        WHY IT DOES NOT STUTTER. Motion goes through `transform`, `opacity` and
+        one registered custom property (`--sweep`) — never `filter: blur()`,
+        never `clip-path`, never width. The pen is the same eased progress as
+        the sweep, expressed as a rotation instead of an angle inside a
+        gradient, which keeps it locked to the edge it paints.
+
+        The small coins in the background are the brand's own disc, cropped out
+        of the same PNG at 1:1, so the rain cannot introduce a foreign coin.
+      */
+
+      /* A registered angle: without this the sweep could only switch on or off
+         instead of turning. Older engines keep the artwork static, which is
+         dull but never invisible. */
+      @property --sweep {
+        syntax: '<angle>';
+        inherits: false;
+        initial-value: 0deg;
+      }
+
+      #hassal-boot {
+        /* The socket, measured straight off the artwork: the disc spans x
+           87-106, y 113-132 in the 192px file, so its centre is 50.26% across
+           and 63.8% down with a radius of 5.21% of the canvas. The radius used
+           below is a hair wider — the strokes layer gives the disc up
+           completely and the coin layer fills the same circle, so the two masks
+           sum to full opacity. Everything derives from these three numbers so
+           the hole, the coin, the ripple and the transform origin cannot drift
+           apart when the stage resizes. */
+        --boot-stage: clamp(120px, 33vw, 152px);
+        --socket-x: calc(var(--boot-stage) * 0.5039);
+        --socket-y: calc(var(--boot-stage) * 0.6406);
+        --socket-r: calc(var(--boot-stage) * 0.0562);
+        /* The disc of the 512px file occupies x 231-285, y 301-355 — 55px
+           square. A rain coin `--w` wide therefore scales the whole sheet by
+           --w/55 and offsets it by the disc's own corner, which is why every
+           falling coin is the brand's coin and not a drawn substitute. */
+        --coin-sheet: url('/brand/icon-512.png');
+        --coin-scale: 9.309;
+
+        position: fixed;
+        inset: 0;
+        z-index: 2147483000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        pointer-events: none;
+        animation: hassal-boot-leave 520ms cubic-bezier(0.4, 0, 0.2, 1) 2400ms forwards;
+      }
+
+      @keyframes hassal-boot-leave {
+        to { opacity: 0; visibility: hidden; transform: scale(1.035); }
+      }
+
+      /* ————— the falling coins, behind everything ————— */
+      .hassal-boot-rain {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .hassal-boot-coinlet {
+        position: absolute;
+        top: 0;
+        left: var(--x);
+        width: var(--w);
+        height: var(--w);
+        background-image: var(--coin-sheet);
+        background-repeat: no-repeat;
+        background-size: calc(var(--w) * var(--coin-scale)) calc(var(--w) * var(--coin-scale));
+        background-position: calc(var(--w) * -4.2) calc(var(--w) * -5.4727);
+        border-radius: 999px;
+        opacity: 0;
+        will-change: transform, opacity;
+        animation: hassal-boot-fall var(--dur) linear var(--delay) infinite;
+      }
+
+      /* scaleX carries the flip: it is a cosine in disguise, and unlike a real
+         rotateY it costs no 3D context on fourteen elements. */
+      @keyframes hassal-boot-fall {
+        0%   { transform: translate3d(0, -14vh, 0)        rotate(-18deg) scaleX(1);    opacity: 0; }
+        8%   { opacity: var(--peak); }
+        25%  { transform: translate3d(var(--sway), 25vh, 0) rotate(58deg)  scaleX(0.14); }
+        50%  { transform: translate3d(0, 62vh, 0)         rotate(134deg) scaleX(-1);   }
+        75%  { transform: translate3d(calc(var(--sway) * -1), 88vh, 0) rotate(206deg) scaleX(0.14); }
+        92%  { opacity: var(--peak); }
+        100% { transform: translate3d(0, 116vh, 0)        rotate(282deg) scaleX(1);    opacity: 0; }
+      }
+
+      /* ————— the mark ————— */
+      .hassal-boot-stage {
+        position: relative;
+        z-index: 1;
+        width: var(--boot-stage);
+        height: var(--boot-stage);
+        margin-bottom: 30px;
+        perspective: 760px;
+      }
+
+      /* 0 · the warm bloom that arrives under the coin. */
+      .hassal-boot-bloom {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: calc(var(--boot-stage) * 2);
+        height: calc(var(--boot-stage) * 2);
+        margin: calc(var(--boot-stage) * -1) 0 0 calc(var(--boot-stage) * -1);
+        border-radius: 999px;
+        background: radial-gradient(circle, rgba(232, 181, 83, 0.36) 0%, rgba(232, 181, 83, 0.12) 42%, transparent 70%);
+        opacity: 0;
+        transform: scale(0.6);
+        animation: hassal-boot-bloom 850ms cubic-bezier(0.16, 0.84, 0.28, 1) 1940ms both;
+      }
+
+      @keyframes hassal-boot-bloom {
+        0%   { opacity: 0; transform: scale(0.6); }
+        45%  { opacity: 1; transform: scale(1.05); }
+        100% { opacity: 0.6; transform: scale(1); }
+      }
+
+      /* 1 · the sweep that uncovers the artwork, all the way round. */
+      .hassal-boot-draw {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        --sweep: 0deg;
+        -webkit-mask-image: conic-gradient(from -90deg at 50% 50%,
+          #000 0 calc(var(--sweep) - 22deg), rgba(0, 0, 0, 0.55) var(--sweep), transparent calc(var(--sweep) + 7deg));
+        mask-image: conic-gradient(from -90deg at 50% 50%,
+          #000 0 calc(var(--sweep) - 22deg), rgba(0, 0, 0, 0.55) var(--sweep), transparent calc(var(--sweep) + 7deg));
+        animation: hassal-boot-reveal 1300ms cubic-bezier(0.3, 0.72, 0.22, 1) 120ms both;
+      }
+
+      @keyframes hassal-boot-reveal {
+        from { --sweep: 0deg; }
+        to   { --sweep: 360deg; }
+      }
+
+      /* The mark, minus the coin. */
+      .hassal-boot-strokes {
+        position: absolute;
+        inset: 0;
+        background: var(--coin-sheet) center / 100% 100% no-repeat;
+        -webkit-mask-image: radial-gradient(circle var(--socket-r) at var(--socket-x) var(--socket-y),
+                          transparent 0 calc(var(--socket-r) - 1.4px), #000 var(--socket-r));
+        mask-image: radial-gradient(circle var(--socket-r) at var(--socket-x) var(--socket-y),
+                          transparent 0 calc(var(--socket-r) - 1.4px), #000 var(--socket-r));
+      }
+
+      /* 2 · the pen: an arm pivoted on the centre, riding the leading edge. */
+      .hassal-boot-pen {
+        position: absolute;
+        left: calc(50% - 1.25px);
+        bottom: 50%;
+        width: 2.5px;
+        height: calc(var(--boot-stage) * 0.6);
+        border-radius: 999px;
+        transform-origin: 50% 100%;
+        background: linear-gradient(to top, rgba(232, 181, 83, 0), rgba(232, 181, 83, 0.55) 55%, #f8e3b0 100%);
+        box-shadow: 0 0 14px 2px rgba(232, 181, 83, 0.45);
+        will-change: transform;
+        animation: hassal-boot-pen 1300ms cubic-bezier(0.3, 0.72, 0.22, 1) 120ms both;
+      }
+
+      @keyframes hassal-boot-pen {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
+      }
+
+      /* 3 · the coin that falls into the socket. */
+      .hassal-boot-coin {
+        position: absolute;
+        inset: 0;
+        background: var(--coin-sheet) center / 100% 100% no-repeat;
+        -webkit-mask-image: radial-gradient(circle calc(var(--socket-r) + 1.2px) at var(--socket-x) var(--socket-y),
+                          #000 0 var(--socket-r), transparent calc(var(--socket-r) + 1.2px));
+        mask-image: radial-gradient(circle calc(var(--socket-r) + 1.2px) at var(--socket-x) var(--socket-y),
+                          #000 0 var(--socket-r), transparent calc(var(--socket-r) + 1.2px));
+        transform-origin: var(--socket-x) var(--socket-y);
+        /* Visible on purpose: hiding the back face would blank the disc twice
+           per revolution and read as flicker rather than as a spin. */
+        backface-visibility: visible;
+        opacity: 0;
+        will-change: transform, opacity;
+        animation: hassal-boot-coin 800ms cubic-bezier(0.3, 0.62, 0.28, 1) 1340ms both;
+      }
+
+      @keyframes hassal-boot-coin {
+        0%   { transform: translateY(calc(var(--boot-stage) * -1.1)) rotateY(0deg)   rotateX(58deg) scale(1.95); opacity: 0; }
+        16%  { opacity: 1; }
+        62%  { transform: translateY(4px)                            rotateY(486deg) rotateX(6deg)  scale(0.9);  opacity: 1; }
+        78%  { transform: translateY(-5px)                           rotateY(648deg) rotateX(-4deg) scale(1.07); }
+        90%  { transform: translateY(1.5px)                          rotateY(706deg) rotateX(2deg)  scale(0.98); }
+        100% { transform: translateY(0)                              rotateY(720deg) rotateX(0deg)  scale(1);    opacity: 1; }
+      }
+
+      /* 4 · the ring the landing leaves in the surface. */
+      .hassal-boot-ripple {
+        position: absolute;
+        left: var(--socket-x);
+        top: var(--socket-y);
+        width: calc(var(--socket-r) * 2);
+        height: calc(var(--socket-r) * 2);
+        margin: calc(var(--socket-r) * -1) 0 0 calc(var(--socket-r) * -1);
+        border-radius: 999px;
+        border: 1.5px solid rgba(232, 181, 83, 0.85);
+        opacity: 0;
+        transform: scale(0.45);
+        will-change: transform, opacity;
+        animation: hassal-boot-ripple 600ms cubic-bezier(0.16, 0.84, 0.28, 1) 1980ms both;
+      }
+
+      @keyframes hassal-boot-ripple {
+        0%   { opacity: 0;    transform: scale(0.45); }
+        22%  { opacity: 0.95; }
+        100% { opacity: 0;    transform: scale(2.7); }
+      }
+
+      /* ————— the word ————— */
+      .hassal-boot-rule {
+        width: 0;
+        height: 1px;
+        margin-bottom: 20px;
+        background: linear-gradient(90deg, transparent, rgba(200, 148, 40, 0.9), transparent);
+        animation: hassal-boot-rule 500ms cubic-bezier(0.16, 0.84, 0.28, 1) 1440ms both;
+      }
+
+      @keyframes hassal-boot-rule {
+        from { width: 0; opacity: 0; }
+        to   { width: min(268px, 64vw); opacity: 1; }
+      }
+
+      .hassal-boot-name {
+        font-family: 'Tajawal', 'IBM Plex Sans Arabic', sans-serif;
+        font-size: clamp(38px, 9vw, 50px);
+        font-weight: 800;
+        line-height: 1.15;
+        color: #0f172a;
+        letter-spacing: 0.18em;
+        animation: hassal-boot-name 520ms cubic-bezier(0.16, 0.84, 0.28, 1) 1600ms both;
+      }
+
+      @keyframes hassal-boot-name {
+        from { opacity: 0; letter-spacing: 0.42em; transform: translateY(10px); }
+        to   { opacity: 1; letter-spacing: 0.18em; transform: translateY(0); }
+      }
+
+      .hassal-boot-latin {
+        margin-top: 6px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.46em;
+        text-indent: 0.46em;
+        color: #0f766e;
+        animation: hassal-boot-rise 400ms ease-out 1860ms both;
+      }
+
+      /* The phrase the brand is built on. */
+      .hassal-boot-tagline {
+        margin-top: 26px;
+        font-family: 'Tajawal', 'IBM Plex Sans Arabic', sans-serif;
+        font-size: clamp(21px, 5.6vw, 29px);
+        font-weight: 800;
+        line-height: 1.3;
+        color: #a9761c;
+        animation: hassal-boot-slogan 560ms cubic-bezier(0.22, 0.9, 0.24, 1) 2020ms both;
+      }
+
+      @keyframes hassal-boot-slogan {
+        from { opacity: 0; transform: translateY(12px) scale(0.94); }
+        60%  { opacity: 1; transform: translateY(0) scale(1.03); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      .hassal-boot-promise {
+        margin-top: 10px;
+        font-size: 11px;
+        font-weight: 500;
+        color: #64748b;
+        animation: hassal-boot-rise 440ms ease-out 2240ms both;
+      }
+
+      @keyframes hassal-boot-rise {
+        from { opacity: 0; transform: translateY(9px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+
+      /*
+        Someone who asked for no motion should not be handed a three second
+        curtain. The assembled brand — mark, coin seated in its socket, word,
+        phrase — still appears; nothing animates, and it clears in about 740ms.
+      */
+      @media (prefers-reduced-motion: reduce) {
+        #hassal-boot { animation: hassal-boot-leave 300ms ease 440ms forwards; }
+        .hassal-boot-rain,
+        .hassal-boot-pen,
+        .hassal-boot-ripple { display: none; }
+        .hassal-boot-draw { animation: none; mask: none; -webkit-mask: none; }
+        .hassal-boot-bloom { animation: none; opacity: 1; transform: scale(1); }
+        .hassal-boot-coin { animation: none; opacity: 1; }
+        .hassal-boot-rule,
+        .hassal-boot-name,
+        .hassal-boot-latin,
+        .hassal-boot-tagline,
+        .hassal-boot-promise {
+          animation: none;
+          opacity: 1;
+          transform: none;
+          letter-spacing: normal;
+        }
+        .hassal-boot-rule { width: min(268px, 64vw); }
+        .hassal-boot-name { letter-spacing: 0.18em; }
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 text-slate-900 antialiased selection:bg-emerald-500 selection:text-white">
+    <div id="root"></div>
+
+    <!-- A sibling of #root, on purpose: see the note in the style above. -->
+    <div id="hassal-boot" aria-hidden="true">
+      <div class="hassal-boot-rain">
+        <i class="hassal-boot-coinlet" style="--x: 4%;  --w: 13px; --dur: 3400ms; --delay: -1900ms; --sway: 10px; --peak: .22"></i>
+        <i class="hassal-boot-coinlet" style="--x: 11%; --w: 19px; --dur: 2900ms; --delay: -640ms;  --sway: -8px; --peak: .3"></i>
+        <i class="hassal-boot-coinlet" style="--x: 17%; --w: 10px; --dur: 3800ms; --delay: -2600ms; --sway: 12px; --peak: .16"></i>
+        <i class="hassal-boot-coinlet" style="--x: 24%; --w: 15px; --dur: 3100ms; --delay: -1180ms; --sway: -11px; --peak: .24"></i>
+        <i class="hassal-boot-coinlet" style="--x: 31%; --w: 21px; --dur: 2700ms; --delay: -220ms;  --sway: 7px; --peak: .34"></i>
+        <i class="hassal-boot-coinlet" style="--x: 38%; --w: 11px; --dur: 3600ms; --delay: -2980ms; --sway: -9px; --peak: .18"></i>
+        <i class="hassal-boot-coinlet" style="--x: 46%; --w: 16px; --dur: 3000ms; --delay: -1560ms; --sway: 11px; --peak: .2"></i>
+        <i class="hassal-boot-coinlet" style="--x: 55%; --w: 12px; --dur: 3500ms; --delay: -880ms;  --sway: -12px; --peak: .2"></i>
+        <i class="hassal-boot-coinlet" style="--x: 62%; --w: 20px; --dur: 2800ms; --delay: -2400ms; --sway: 8px; --peak: .3"></i>
+        <i class="hassal-boot-coinlet" style="--x: 69%; --w: 10px; --dur: 3900ms; --delay: -380ms;  --sway: -7px; --peak: .16"></i>
+        <i class="hassal-boot-coinlet" style="--x: 76%; --w: 17px; --dur: 3050ms; --delay: -1740ms; --sway: 12px; --peak: .26"></i>
+        <i class="hassal-boot-coinlet" style="--x: 83%; --w: 13px; --dur: 3350ms; --delay: -620ms;  --sway: -10px; --peak: .22"></i>
+        <i class="hassal-boot-coinlet" style="--x: 90%; --w: 18px; --dur: 2950ms; --delay: -2120ms; --sway: 9px; --peak: .28"></i>
+        <i class="hassal-boot-coinlet" style="--x: 95%; --w: 11px; --dur: 3700ms; --delay: -1420ms; --sway: -8px; --peak: .18"></i>
+      </div>
+
+      <div class="hassal-boot-stage">
+        <span class="hassal-boot-bloom"></span>
+        <div class="hassal-boot-draw"><div class="hassal-boot-strokes"></div></div>
+        <span class="hassal-boot-pen"></span>
+        <div class="hassal-boot-coin"></div>
+        <span class="hassal-boot-ripple"></span>
+      </div>
+
+      <span class="hassal-boot-rule"></span>
+      <span class="hassal-boot-name">حَصّـال</span>
+      <span class="hassal-boot-latin">HASSAL B2B</span>
+      <span class="hassal-boot-tagline">معكم خراج؟</span>
+      <span class="hassal-boot-promise">حصّلها بخراجك, تستاهل أقل</span>
+    </div>
+
+    <script type="module" src="/src/app/main.tsx"></script>
+    <script>
+      // A safety net, not the mechanism. The curtain takes itself out through
+      // CSS (`visibility: hidden` in the last keyframe), but a browser
+      // configured to run no animations would leave it over the app forever
+      // with nothing on the page reachable. This sets that same property after
+      // the show's own length plus a second, so it can only ever agree with the
+      // animation and never cut across it. In a background tab the timer is
+      // throttled, so it fires when the person is actually back.
+      (function () {
+        var boot = document.getElementById('hassal-boot');
+        if (!boot) return;
+        function hideBoot() {
+          boot.style.visibility = 'hidden';
+          boot.style.display = 'none';
+        }
+        boot.addEventListener('animationend', function (e) {
+          if (e.animationName === 'hassal-boot-leave') hideBoot();
+        });
+        setTimeout(hideBoot, 3600);
+      })();
+    </script>
+  </body>
+</html>
